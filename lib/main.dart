@@ -1,122 +1,367 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-void main() {
-  runApp(const MyApp());
+import 'package:media_kit/media_kit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'locator/service_locator.dart';
+import 'services/alist_api.dart';
+import 'services/netease_api.dart';
+import 'services/objectbox_service.dart';
+import 'widgets/play_controls.dart';
+import 'widgets/cookie_login.dart';
+import 'widgets/user_playlist_widget.dart';
+import 'providers/providers.dart';
+import 'utils/setting.dart';
+
+import './providers/pixel_converter.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  MediaKit.ensureInitialized();
+
+  // 初始化服务定位器（自动注册 SharedPreferences/API 等）
+  await setupServiceLocator();
+
+  // 从 get_it 获取已注册的服务
+  final objectBoxService = await ObjectBoxService.init();
+  getIt.registerSingleton<ObjectBoxService>(objectBoxService); // 注册 ObjectBox
+
+  // 初始化 API 服务
+  try {
+    final prefs = getIt<SharedPreferences>();
+    final api = getIt<NeteaseMusicApi>();
+    final aApi = getIt<AlistUtils>();
+
+    // 检查是否设置了自动登录
+    final autoLogin = prefs.getBool('auto_login') ?? false;
+    if (autoLogin) {
+      String cookie = prefs.getString('netease_cookie') ?? '';
+      if (cookie.isNotEmpty) {
+        debugPrint('自动登录中...');
+        await api.init(cookie);
+      }
+    }
+
+    // AList 初始化
+    await aApi.newServer('http://localhost:5244');
+    await aApi.login('listening', 'music');
+  } catch (e) {
+    debugPrint('Initialization failed: $e');
+  }
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        objectBoxServiceProvider.overrideWithValue(objectBoxService),
+        // Make sure musicBoxProvider is declared as non-nullable in its definition
+      ],
+      child: const MusicApp(),
+    ),
+  );
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MusicApp extends StatelessWidget {
+  const MusicApp({Key? key}) : super(key: key);
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Music Player',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blueAccent,
+          brightness: Brightness.dark,
+        ),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const AppService(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class AppService extends ConsumerStatefulWidget {
+  const AppService({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  ConsumerState<AppService> createState() => _AppServiceState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _AppServiceState extends ConsumerState<AppService> {
+  AlistUtils get aApi => getIt<AlistUtils>();
+  NeteaseMusicApi get api => getIt<NeteaseMusicApi>();
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeService();
     });
+  }
+
+  Future<void> _initializeService() async {
+    try {
+      final isLoggedIn = api.isLoggedIn;
+      ref.read(loginStateProvider.notifier).state = isLoggedIn;
+      await ref
+          .read(musicBoxProvider)
+          .setCurrentUsername('listening@localhost');
+      await ref.read(musicBoxProvider).checkTorefresh();
+      if (isLoggedIn) {
+        await _loadInitialData();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Initialization error: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _loadInitialData() async {
+    try {
+      final dailySongs = await api.getDailyRecommendSongs();
+      String uid = api.getuserid();
+      uid = uid.isEmpty ? uid : '10934775';
+      final playlists = await api.getUserPlaylists(uid: uid);
+
+      ref.read(dailySongsProvider.notifier).state = dailySongs;
+      ref.read(playlistsProvider.notifier).state = playlists;
+    } catch (e) {
+      debugPrint('Data load error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Data load error: ${e.toString()}')),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    return Scaffold(body: MainAppScreen());
+  }
+}
+
+class MainAppScreen extends ConsumerWidget {
+  NeteaseMusicApi get api => getIt<NeteaseMusicApi>();
+
+  const MainAppScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final appBarHeight = getAppBarHeight(context);
+    final isLoggedIn = ref.watch(loginStateProvider);
+    final dailySongs = ref.watch(dailySongsProvider);
+    final playlists = ref.watch(playlistsProvider);
+
+    debugPrint(
+      'Current state: isLoggedIn=$isLoggedIn, dailySongs=${dailySongs.length}, playlists=${playlists.length}',
+    );
+
+    if (!isLoggedIn) {
+      return _buildLoginPrompt(context, ref);
+    }
+
+    if (dailySongs.isEmpty || playlists.isEmpty) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: const Text('Music Player'),
+        actions: [
+          if (isLoggedIn)
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () => _refreshData(context, ref),
+            ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () => _showSettingsDialog(context),
+          ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            bottom: PixelConverter.physicalToLogical(context, 80),
+            child: HomeContentWidget(
+              playlists: playlists,
+              dailySongs: dailySongs,
+            ),
+          ),
+          Positioned(
+            bottom: 0,
+            child: SizedBox(child: MiniPlayer(appbarheight: appBarHeight)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoginPrompt(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Music Player'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () => _showSettingsDialog(context),
+          ),
+        ],
       ),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.music_note,
+                  size: 64,
+                  color: Colors.blueAccent,
+                ),
+              ),
+              const SizedBox(height: 32),
+              const Text(
+                '欢迎使用音乐播放器',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '请登录网易云音乐账户以使用完整功能',
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
+
+              // 登录按钮
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _showLoginDialog(context, ref),
+                  icon: const Icon(Icons.login),
+                  label: const Text('Cookie登录'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // 其他选项
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton.icon(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder:
+                            (context) => AlertDialog(
+                              title: const Text('登录说明'),
+                              content: const Text(
+                                'Cookie登录：\n'
+                                '1. 登录网页版网易云音乐\n'
+                                '2. 按F12打开开发者工具\n'
+                                '3. 在Network标签中找到Cookie\n'
+                                '4. 复制到应用中进行登录\n\n'
+                                'Cookie会自动保存，下次可自动登录。',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('知道了'),
+                                ),
+                              ],
+                            ),
+                      );
+                    },
+                    icon: const Icon(Icons.help_outline),
+                    label: const Text('登录帮助'),
+                  ),
+                  const SizedBox(width: 20),
+                  TextButton.icon(
+                    onPressed: () => _showSettingsDialog(context),
+                    icon: const Icon(Icons.settings),
+                    label: const Text('设置'),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
+  }
+
+  void _showLoginDialog(BuildContext context, WidgetRef ref) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => CookieLoginPage(
+              onLoginSuccess: () async {
+                ref.read(loginStateProvider.notifier).state = true;
+                await _loadInitialData(context, ref);
+                Navigator.popUntil(context, (route) => route.isFirst);
+              },
+            ),
+      ),
+    );
+  }
+
+  Future<void> _showSettingsDialog(BuildContext context) async {
+    final prefs = getIt<SharedPreferences>();
+    await showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
+              child: SettingPage(),
+            ),
+          ),
+    );
+  }
+
+  Future<void> _loadInitialData(BuildContext context, WidgetRef ref) async {
+    try {
+      final dailySongs = await api.getDailyRecommendSongs();
+      String uid = api.getuserid();
+      final playlists = await api.getUserPlaylists(uid: uid);
+
+      ref.read(dailySongsProvider.notifier).state = dailySongs;
+      ref.read(playlistsProvider.notifier).state = playlists;
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Data load error: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _refreshData(BuildContext context, WidgetRef ref) async {
+    await _loadInitialData(context, ref);
+  }
+
+  double getAppBarHeight(BuildContext context) {
+    final defaultAppBarHeight = kToolbarHeight;
+    final theme = Theme.of(context);
+    final appBarTheme = theme.appBarTheme;
+    final appBarHeight = appBarTheme.toolbarHeight ?? defaultAppBarHeight;
+    return appBarHeight;
   }
 }

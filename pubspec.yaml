@@ -31,20 +31,69 @@ dependencies:
   flutter:
     sdk: flutter
 
+          
+  # 状态管理
+  flutter_riverpod: ^2.6.1          # Riverpod 最新稳定版
+  riverpod_annotation: ^2.6.0
+  # 数据库
+  objectbox: ^4.2.0                 # ObjectBox 支持 Dart 3 :cite[3]
+  objectbox_flutter_libs: ^4.2.0     # Flutter 平台适配
+
+  # 网络请求
+  dio: ^5.3.0                        # 支持动态 URL 请求
+  #retrofit: ^4.0.0                   # API 封装 (基于 Dio)
+
+  # UI 拟物风设计
+  flutter_neumorphic_plus: ^3.3.0                # 拟物化组件库
+  flutter_screenutil: ^5.9.3             # 玻璃拟态效果
+  iconsax_plus: ^1.0.0                   # 现代风格图标
+
+  # 其他工具
+  cached_network_image: ^3.4.1       # 图片缓存
+  flutter_dotenv: ^5.0.0             # 环境变量管理（需注意生产安全 :cite[2]:cite[6]）
+  equatable: ^2.0.5                  # 简化对象比较 :cite[3]
+  shimmer: ^3.0.0                    # 加载动画 :cite[4]
+
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-
+  media_kit: ^1.2.0
+  #media_kit_libs_windows_audio: ^1.0.9
+  media_kit_libs_audio: ^1.0.6
+  shared_preferences: ^2.5.3
+  http: ^1.4.0
+  path: ^1.9.1
+  path_provider: ^2.1.5
+  crypto: ^3.0.6
+  tuple: ^2.0.2
+  dio_cookie_manager: ^3.2.0
+  cookie_jar: ^4.0.8
+  json_annotation: ^4.9.0
+  
+  permission_handler: ^12.0.0+1
+  get_it: ^8.0.3
+  file_selector: ^1.0.3
+  card_swiper: ^3.0.1
+  
+  
+dependency_overrides:
+  analyzer: ^7.3.0
+  analyzer_plugin: 0.12.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
+  build_runner: ^2.0.0
+  riverpod_generator: ^2.0.0  # 可选，代码生成
+  objectbox_generator: ^4.2.0
+  mockito: ^5.4.6
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  json_serializable: ^6.9.5
+    
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

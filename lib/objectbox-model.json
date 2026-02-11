@@ -1,0 +1,102 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:7514042444299006705",
+      "lastPropertyId": "4:1761672887444525762",
+      "name": "CustomPlaylist",
+      "properties": [
+        {
+          "id": "1:924450062243918248",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:2177007125199523635",
+          "name": "name",
+          "type": 9,
+          "flags": 2080,
+          "indexId": "1:7323469231237640275"
+        },
+        {
+          "id": "3:8895482605904203984",
+          "name": "mediaIdList",
+          "type": 23
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "2:5857196957192020907",
+      "lastPropertyId": "9:1493161026331604498",
+      "name": "MediaItem",
+      "properties": [
+        {
+          "id": "1:675755975355496645",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:6021805121434393717",
+          "name": "title",
+          "type": 9,
+          "flags": 2080,
+          "indexId": "2:895507047527422970"
+        },
+        {
+          "id": "3:1719235371574743694",
+          "name": "artist",
+          "type": 9
+        },
+        {
+          "id": "4:2540646709134866325",
+          "name": "album",
+          "type": 9
+        },
+        {
+          "id": "5:3148894415222118536",
+          "name": "url",
+          "type": 9
+        },
+        {
+          "id": "6:6920447155574983356",
+          "name": "thumbnail",
+          "type": 9
+        },
+        {
+          "id": "7:4572951299292364084",
+          "name": "durationMs",
+          "type": 6
+        },
+        {
+          "id": "8:950280312940953351",
+          "name": "provider",
+          "type": 9
+        },
+        {
+          "id": "9:1493161026331604498",
+          "name": "association",
+          "type": 9
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "2:5857196957192020907",
+  "lastIndexId": "2:895507047527422970",
+  "lastRelationId": "0:0",
+  "lastSequenceId": "0:0",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [],
+  "retiredPropertyUids": [
+    1761672887444525762
+  ],
+  "retiredRelationUids": [],
+  "version": 1
+}
