@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:grassmusicv2/utils/netease_image_cache_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:grassmusicv2/models/netease_music_user_playlist.dart';
@@ -155,6 +156,7 @@ class _PlaylistCard extends StatelessWidget {
                       ),
                     ),
                     child: CachedNetworkImage(
+                      cacheManager: NeteaseImageCacheManager(),
                       imageUrl: playlist.coverImgUrl,
                       fit: BoxFit.cover,
                       placeholder:
@@ -428,6 +430,7 @@ class PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                 PixelConverter.physicalToLogical(context, 8),
                               ),
                               child: CachedNetworkImage(
+                                cacheManager: NeteaseImageCacheManager(),
                                 imageUrl: detail.coverImgUrl,
                                 width: PixelConverter.physicalToLogical(
                                   context,

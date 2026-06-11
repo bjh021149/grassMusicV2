@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:grassmusicv2/utils/netease_image_cache_manager.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -250,6 +251,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                   });
                 },
                 child: CachedNetworkImage(
+                  cacheManager: NeteaseImageCacheManager(),
                   imageUrl:
                       extras?['thumbnail']?.isNotEmpty == true
                           ? extras!['thumbnail']
@@ -466,6 +468,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                                     child: AspectRatio(
                                       aspectRatio: 1,
                                       child: CachedNetworkImage(
+                                        cacheManager: NeteaseImageCacheManager(),
                                         imageUrl:
                                             extras?['thumbnail'] ??
                                             'https://via.placeholder.com/500',
@@ -661,6 +664,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                                     child: AspectRatio(
                                       aspectRatio: 1,
                                       child: CachedNetworkImage(
+                                        cacheManager: NeteaseImageCacheManager(),
                                         imageUrl:
                                             extras?['thumbnail'] ??
                                             'https://via.placeholder.com/500',

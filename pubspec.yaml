@@ -50,6 +50,7 @@ dependencies:
 
   # 其他工具
   cached_network_image: ^3.4.1       # 图片缓存
+  flutter_cache_manager: ^3.4.1       # 图片缓存管理
   flutter_dotenv: ^5.0.0             # 环境变量管理（需注意生产安全 :cite[2]:cite[6]）
   equatable: ^2.0.5                  # 简化对象比较 :cite[3]
   shimmer: ^3.0.0                    # 加载动画 :cite[4]

@@ -63,7 +63,7 @@ class _CookieLoginPageState extends State<CookieLoginPage> {
     try {
       await api.init(cookie);
       await prefs.setString('netease_cookie', cookie);
-      await prefs.setBool('auto_login', true);
+      await prefs.setBool('auto_login', false);
 
       widget.onLoginSuccess();
 

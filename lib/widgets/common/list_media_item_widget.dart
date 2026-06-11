@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:grassmusicv2/providers/pixel_converter.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:grassmusicv2/utils/netease_image_cache_manager.dart';
 import 'package:grassmusicv2/providers/player_provider.dart';
 
 SharedPreferences get pref => getIt<SharedPreferences>();
@@ -42,6 +43,7 @@ class MediaItems extends ConsumerWidget {
                 height: PixelConverter.physicalToLogical(context, height),
                 width: PixelConverter.physicalToLogical(context, 200),
                 child: CachedNetworkImage(
+                  cacheManager: NeteaseImageCacheManager(),
                   imageUrl:
                       extras['thumbnail']?.toString().isNotEmpty == true
                           ? extras['thumbnail']

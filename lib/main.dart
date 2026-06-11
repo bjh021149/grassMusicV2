@@ -14,6 +14,7 @@ import 'providers/providers.dart';
 import 'utils/setting.dart';
 
 import './providers/pixel_converter.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,8 +44,8 @@ void main() async {
     }
 
     // AList 初始化
-    await aApi.newServer('http://localhost:5244');
-    await aApi.login('listening', 'music');
+    await aApi.newServer('http://192.168.1.128:5244');
+    await aApi.login('admin', 'hi021149');
   } catch (e) {
     debugPrint('Initialization failed: $e');
   }
@@ -354,6 +355,7 @@ class MainAppScreen extends ConsumerWidget {
   }
 
   Future<void> _refreshData(BuildContext context, WidgetRef ref) async {
+    await DefaultCacheManager().emptyCache();
     await _loadInitialData(context, ref);
   }
 

@@ -44,7 +44,13 @@ class NeteaseMusicApi {
 
   NeteaseMusicApi(this._prefs)
     : _dio = Dio(
-        BaseOptions(contentType: 'application/x-www-form-urlencoded'),
+        BaseOptions(
+          contentType: 'application/x-www-form-urlencoded',
+          headers: {
+            'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          },
+        ),
       ) {
     _baseUrl = _prefs.getString('server_address') ?? _baseUrl;
     _dio.options.baseUrl = _baseUrl;
@@ -102,6 +108,9 @@ class NeteaseMusicApi {
     final response = await _safeRequest('/user/account');
     if (response['code'] == 200) {
       final user = response['profile'];
+      if (user == null) {
+        throw Exception('User profile is null, cookie may be expired');
+      }
       print(UserProfile.fromJson(user).userId);
       await _prefs.setString('netease_userId', user['userId'].toString());
       return UserProfile.fromJson(user);
